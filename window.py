@@ -1,22 +1,15 @@
-import tkinter as Tk        # Бибиотека для оконного приложения
-import tkinter.ttk as ttk   # Библиотека виджетов для окна
-
+import tkinter as Tk
+import tkinter.ttk as ttk
 from tables import MacTableFrame, BssIdTableFrame
-# from plotes import *
 from startpage_plot import StartPagePlote
 from onepage_plot import OnePagePlote
-
 import tkinter.messagebox as mbox
-
 from math import floor
 import datetime as dt
-
 from PIL import Image, ImageTk
 
-# ==============================[Внешний класс]=================================
-
 class MainWindow(Tk.Tk):
-# 
+
   def __init__(self, win_analyz_conn, log, update_rate):
     Tk.Tk.__init__(self)
 
@@ -42,9 +35,7 @@ class MainWindow(Tk.Tk):
     self.notebook.bind("<<NotebookTabChanged>>", None)
 
   def _data_request(self):
-  # 
     while True:
-    # 
       self.conn.send(["ALL DATA", ])
       if (self.conn.poll(timeout = 1) == True):
         msg = self.conn.recv()
@@ -52,23 +43,15 @@ class MainWindow(Tk.Tk):
         if (msg[0] == "ALL"):
           data = msg[1]
           break
-    # 
     return data
-  # 
 
   def _update(self):
-  # 
     data = self._data_request()
     self.startpage._update(data)
     self.pageone._update(data)
     self.after(self.update_rate, self._update)
-  # 
-
-# ---------------------[Методы для внешнего использования]----------------------
 
   def run(self):
-  # 
-    # Делаем начальный размер окна на весь экран
     wwidth = self.winfo_screenwidth()
     wheight = self.winfo_screenheight()
     self.geometry('{}x{}'.format(wwidth, wheight))
@@ -85,24 +68,14 @@ class MainWindow(Tk.Tk):
     self.notebook.add(self.startpage, image = startpage_icon)
     self.notebook.add(self.pageone, image = pageone_icon)
 
-
-    # Обрабатываем сигнал выхода
     self.protocol('WM_DELETE_WINDOW',_on_close)
-    # Задаем язык окна - только на английском
     self.tk.eval('::msgcat::mclocale en')
 
-    # Включаем реккурсивное обновление
     self.after(0, self._update)
     self.mainloop()
-  # 
-
-# ------------------------------------------------------------------------------
-# 
-
-# ==============================================================================
 
 class StartPage(Tk.Frame):
-#.
+
   def __init__(self, parent):
     Tk.Frame.__init__(self, parent)
 
@@ -110,16 +83,12 @@ class StartPage(Tk.Frame):
     headofpage.pack(side = Tk.TOP)
 
     def _get_start_time():
-    # 
       self.start_data = floor(dt.datetime.now().timestamp())
-
       time = dt.datetime.fromtimestamp(self.start_data).\
                             strftime('%d/%m/%Y, %H:%M')
       return time
-    # 
 
     width = self.winfo_screenwidth() * 0.5
-
     starttime = Tk.LabelFrame(headofpage, text = "Session start time",\
                          width = width, height = 100, font = ("Helvetica", 15))
     starttime.pack(side = Tk.LEFT, anchor = Tk.CENTER)
@@ -144,68 +113,45 @@ class StartPage(Tk.Frame):
     self.plot.pack(fill = Tk.BOTH, expand = True)
 
   def _update(self, data):
-  # 
     def __get_session_time():
-    # 
       now = floor(dt.datetime.now().timestamp())
       sec = now - self.start_data
       time = dt.timedelta(seconds = sec)
       return time
-    # 
 
     self.table.update_table(data)
     self.plot.update_plot(data)
     self.wlable['text'] = __get_session_time()
-  # 
-
-# 
-
-# ==============================================================================
 
 class PageOne(Tk.Frame):
-# 
   def _init_combo_list(self, data, main):
-  # 
     loc_list = list(data.keys())
     # if (len(loc_list) > 0):
     #   self.default_loc = loc_list[0]
-
     return loc_list
-  # 
 
   def _update_combobox(self, data):
-  # 
     values = list(data.keys())
     if (len(values) == 0):
       self.default_loc = ""
-
     self.combobox['values'] = values
-  # 
 
   def _change_location(self, event):
-  # 
     select = event.widget.get()
-
     if (select != self.default_loc):
-    # 
       # local_data = (self.full_data.get(select)).get('mac_base')
       # self.plot.update_plot(local_data)
       # self.table.update_table(local_data)
       self.default_loc = select
       self.main._update()
-    # 
-  # 
 
   def _get_local_data(self, data):
-  # 
     self.full_data = data
     local_data = data.get(self.default_loc)
 
     if local_data is None:
       local_data = dict()
-
     return local_data
-  # 
 
   def __init__(self, parent, main):
     Tk.Frame.__init__(self, parent)
@@ -218,7 +164,6 @@ class PageOne(Tk.Frame):
     self.default_loc = ""
     self.full_data = dict()
 
-    # TODO Сделать красивую шапку страницы
     self.lable = Tk.Label(headofpage, text = "Selected BSSID:",
                                              font=("Helvetica", 20))
     self.lable.pack(side = Tk.LEFT)
@@ -230,24 +175,15 @@ class PageOne(Tk.Frame):
 
     self.table = MacTableFrame(self)
     self.table.pack(side = Tk.BOTTOM, fill = Tk.BOTH, expand = True)
-    # Функция не дает изменять геометрию фрейма после вставки
     self.table.pack_propagate(0)
 
     self.plot = OnePagePlote(self)
     self.plot.pack(side = Tk.BOTTOM, fill = Tk.BOTH, expand = True)
     self.plot.pack_propagate(0)
 
-# ---------------------[Методы для внешнего использования]----------------------
-
   def _update(self, data):
-  # 
     self._update_combobox(data)
     local_data = self._get_local_data(data)
 
     self.table.update_table(local_data)
     self.plot.update_plot(local_data)
-  # 
-
-# ------------------------------------------------------------------------------
-
-# 
